@@ -1,0 +1,28 @@
+import os, random, json
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import seaborn as sns
+from collections import Counter, defaultdict
+from pathlib import Path
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+from torchvision import datasets, transforms, models
+from PIL import Image, UnidentifiedImageError
+from sklearn.metrics import classification_report, confusion_matrix
+
+import warnings
+warnings.filterwarnings('ignore')
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f'Device : {device}')
+if torch.cuda.is_available():
+    print(f'✅ GPU : {torch.cuda.get_device_name(0)}')
