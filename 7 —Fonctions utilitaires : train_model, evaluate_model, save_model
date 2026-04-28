@@ -1,0 +1,109 @@
+num_epochs = 20
+criterion  = nn.CrossEntropyLoss()
+
+def train_model(model, optimizer, model_name='model', num_epochs=20):
+    train_losses, val_losses         = [], []
+    train_accuracies, val_accuracies = [], []
+    best_val_acc   = 0.0
+    best_ckpt_path = f'/content/{model_name}_best.pth'
+
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss, running_corrects = 0.0, 0
+        for inputs, lbls in train_loader:
+            inputs, lbls = inputs.to(device), lbls.to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss    = criterion(outputs, lbls)
+            loss.backward(); optimizer.step()
+            running_loss     += loss.item() * inputs.size(0)
+            _, preds          = torch.max(outputs, 1)
+            running_corrects += torch.sum(preds == lbls.data)
+
+        epoch_loss = running_loss / len(train_dataset)
+        epoch_acc  = running_corrects.double() / len(train_dataset)
+        train_losses.append(epoch_loss)
+        train_accuracies.append(epoch_acc.item())
+
+        model.eval()
+        running_loss_v, running_corrects_v = 0.0, 0
+        with torch.no_grad():
+            for inputs, lbls in val_loader:
+                inputs, lbls = inputs.to(device), lbls.to(device)
+                outputs = model(inputs)
+                running_loss_v     += criterion(outputs, lbls).item() * inputs.size(0)
+                _, preds            = torch.max(outputs, 1)
+                running_corrects_v += torch.sum(preds == lbls.data)
+
+        epoch_loss_v = running_loss_v / len(val_dataset)
+        epoch_acc_v  = running_corrects_v.double() / len(val_dataset)
+        val_losses.append(epoch_loss_v)
+        val_accuracies.append(epoch_acc_v.item())
+
+        if epoch_acc_v > best_val_acc:
+            best_val_acc = epoch_acc_v
+            torch.save(model.state_dict(), best_ckpt_path)
+            ckpt_info = f'  💾 Checkpoint (val_acc={best_val_acc:.4f})'
+        else:
+            ckpt_info = ''
+
+        print(f'Epoch {epoch+1:>2}/{num_epochs} | '
+              f'Train Loss: {epoch_loss:.4f}  Acc: {epoch_acc:.4f} | '
+              f'Val Loss: {epoch_loss_v:.4f}  Acc: {epoch_acc_v:.4f}{ckpt_info}')
+
+    print('')
+    print(f'✅ Meilleur checkpoint : {best_ckpt_path}  (val_acc={best_val_acc:.4f})')
+    return train_losses, val_losses, train_accuracies, val_accuracies, best_ckpt_path
+
+
+def plot_history(tl, vl, ta, va, title='Modèle'):
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    epochs = range(1, len(tl)+1)
+    axes[0].plot(epochs, tl, label='Train'); axes[0].plot(epochs, vl, label='Val')
+    axes[0].set_title(f'{title} — Loss'); axes[0].legend(); axes[0].grid(alpha=0.4)
+    axes[1].plot(epochs, ta, label='Train'); axes[1].plot(epochs, va, label='Val')
+    axes[1].set_title(f'{title} — Accuracy'); axes[1].legend(); axes[1].grid(alpha=0.4)
+    for ax in axes: ax.set_xlabel('Epoch')
+    plt.tight_layout(); plt.show()
+
+
+def evaluate_model(model, ckpt_path, model_name='model'):
+    print('')
+    print(f'🔍 Évaluation finale — {model_name}')
+    model.load_state_dict(torch.load(ckpt_path, map_location=device))
+    model.eval()
+    all_preds, all_labels = [], []
+    with torch.no_grad():
+        for inputs, lbls in test_loader:
+            inputs = inputs.to(device)
+            _, preds = torch.max(model(inputs), 1)
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(lbls.numpy())
+
+    acc = np.mean(np.array(all_preds) == np.array(all_labels))
+    print('')
+    print(f'📊 Test Accuracy : {acc:.4f} ({acc*100:.2f}%)')
+    print('')
+    print('📋 Classification Report :')
+    print(classification_report(all_labels, all_preds, target_names=classes))
+
+    cm = confusion_matrix(all_labels, all_preds)
+    plt.figure(figsize=(14, 12))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=classes, yticklabels=classes)
+    plt.title(f'{model_name} — Matrice de Confusion', fontsize=13)
+    plt.ylabel('Réel'); plt.xlabel('Prédit')
+    plt.xticks(rotation=45, ha='right', fontsize=8)
+    plt.tight_layout(); plt.show()
+    return acc
+
+
+def save_model(model, name):
+    torch.save(model.state_dict(), f'{name}.pth')
+    serializable = {k: v.cpu().numpy().tolist() for k,v in model.state_dict().items()}
+    with open(f'{name}.json','w') as f: json.dump(serializable, f)
+    print(f'✅ Sauvegardé : {name}.pth & {name}.json')
+
+
+print('✅ Fonctions prêtes : train_model | plot_history | evaluate_model | save_model')
+✅ Fonctions prêtes : train_model | plot_history | evaluate_model | save_model
