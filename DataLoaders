@@ -1,0 +1,50 @@
+data_dir = '/content/DATA_balanced'
+
+full_dataset = datasets.ImageFolder(root=data_dir)
+all_samples  = full_dataset.samples
+classes      = full_dataset.classes
+num_classes  = len(classes)
+
+print(f'Total images : {len(all_samples)}')
+print(f'Nb classes   : {num_classes}')
+
+samples_by_class = defaultdict(list)
+for path, label in all_samples:
+    samples_by_class[label].append((path, label))
+
+random.seed(SEED)
+train_samples, val_samples, test_samples = [], [], []
+
+for label, samps in samples_by_class.items():
+    random.shuffle(samps)
+    n = len(samps)
+    n_train = int(0.70 * n)
+    n_val   = int(0.15 * n)
+    train_samples += samps[:n_train]
+    val_samples   += samps[n_train:n_train+n_val]
+    test_samples  += samps[n_train+n_val:]
+
+random.shuffle(train_samples)
+random.shuffle(val_samples)
+random.shuffle(test_samples)
+
+print(f'\nSplit stratifié → Train: {len(train_samples)} | Val: {len(val_samples)} | Test: {len(test_samples)}')
+
+train_counter = Counter([l for _,l in train_samples])
+val_counter   = Counter([l for _,l in val_samples])
+test_counter  = Counter([l for _,l in test_samples])
+
+x, width = np.arange(num_classes), 0.25
+train_counts = [train_counter.get(i,0) for i in range(num_classes)]
+val_counts   = [val_counter.get(i,0)   for i in range(num_classes)]
+test_counts  = [test_counter.get(i,0)  for i in range(num_classes)]
+
+plt.figure(figsize=(25,5))
+plt.bar(x-width, train_counts, width, label='Train',      color='skyblue')
+plt.bar(x,       val_counts,   width, label='Validation', color='lightgreen')
+plt.bar(x+width, test_counts,  width, label='Test',       color='salmon')
+plt.xlabel('Classe'); plt.ylabel('Fréquence')
+plt.title('Distribution Stratifiée — Train / Val / Test (DATA_balanced)')
+plt.xticks(x, classes, rotation=90, fontsize=8)
+plt.legend(); plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout(); plt.show()
