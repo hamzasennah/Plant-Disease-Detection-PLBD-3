@@ -1,0 +1,14 @@
+import os
+
+drive_path = '/content/drive/MyDrive/AgriScan/DATA_balanced'
+
+# Voir la structure réelle
+for root, dirs, files in os.walk(drive_path):
+    level = root.replace(drive_path, '').count(os.sep)
+    indent = '  ' * level
+    print(f'{indent}{os.path.basename(root)}/')
+    if level == 1:  # Afficher nb images par classe
+        print(f'{indent}  → {len(files)} images')
+    if level > 2:
+        break
+        
