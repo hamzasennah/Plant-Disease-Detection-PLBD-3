@@ -1,0 +1,36 @@
+resnet = models.resnet50(weights='DEFAULT')
+resnet.fc = nn.Linear(resnet.fc.in_features, num_classes)
+resnet = resnet.to(device)
+optimizer_res = optim.Adam(resnet.parameters(), lr=1e-4)
+print(f'✅ ResNet-50 prêt ({num_classes} classes) — DATA_balanced')
+
+(
+    res_train_losses, res_val_losses,
+    res_train_accs,   res_val_accs,
+    res_ckpt
+) = train_model(resnet, optimizer_res, model_name='resnet50', num_epochs=num_epochs)
+Downloading: "https://download.pytorch.org/models/resnet50-11ad3fa6.pth" to /root/.cache/torch/hub/checkpoints/resnet50-11ad3fa6.pth
+100%|██████████| 97.8M/97.8M [00:01<00:00, 67.4MB/s]
+✅ ResNet-50 prêt (15 classes) — DATA_balanced
+Epoch  1/20 | Train Loss: 0.9538  Acc: 0.7222 | Val Loss: 0.1252  Acc: 0.9662  💾 Checkpoint (val_acc=0.9662)
+Epoch  2/20 | Train Loss: 0.3087  Acc: 0.9020 | Val Loss: 0.1073  Acc: 0.9680  💾 Checkpoint (val_acc=0.9680)
+Epoch  3/20 | Train Loss: 0.2267  Acc: 0.9297 | Val Loss: 0.0556  Acc: 0.9844  💾 Checkpoint (val_acc=0.9844)
+Epoch  4/20 | Train Loss: 0.1962  Acc: 0.9352 | Val Loss: 0.0519  Acc: 0.9840
+Epoch  5/20 | Train Loss: 0.1626  Acc: 0.9472 | Val Loss: 0.0353  Acc: 0.9889  💾 Checkpoint (val_acc=0.9889)
+Epoch  6/20 | Train Loss: 0.1524  Acc: 0.9504 | Val Loss: 0.0335  Acc: 0.9902  💾 Checkpoint (val_acc=0.9902)
+Epoch  7/20 | Train Loss: 0.1312  Acc: 0.9564 | Val Loss: 0.0326  Acc: 0.9898
+Epoch  8/20 | Train Loss: 0.1255  Acc: 0.9573 | Val Loss: 0.0351  Acc: 0.9889
+Epoch  9/20 | Train Loss: 0.1186  Acc: 0.9625 | Val Loss: 0.0297  Acc: 0.9907  💾 Checkpoint (val_acc=0.9907)
+Epoch 10/20 | Train Loss: 0.1125  Acc: 0.9625 | Val Loss: 0.0263  Acc: 0.9933  💾 Checkpoint (val_acc=0.9933)
+Epoch 11/20 | Train Loss: 0.1137  Acc: 0.9642 | Val Loss: 0.0274  Acc: 0.9924
+Epoch 12/20 | Train Loss: 0.1017  Acc: 0.9687 | Val Loss: 0.0223  Acc: 0.9920
+Epoch 13/20 | Train Loss: 0.0908  Acc: 0.9700 | Val Loss: 0.0247  Acc: 0.9920
+Epoch 14/20 | Train Loss: 0.0999  Acc: 0.9661 | Val Loss: 0.0218  Acc: 0.9947  💾 Checkpoint (val_acc=0.9947)
+Epoch 15/20 | Train Loss: 0.0948  Acc: 0.9681 | Val Loss: 0.0205  Acc: 0.9933
+Epoch 16/20 | Train Loss: 0.0884  Acc: 0.9706 | Val Loss: 0.0175  Acc: 0.9956  💾 Checkpoint (val_acc=0.9956)
+Epoch 17/20 | Train Loss: 0.0766  Acc: 0.9752 | Val Loss: 0.0256  Acc: 0.9911
+Epoch 18/20 | Train Loss: 0.0867  Acc: 0.9709 | Val Loss: 0.0190  Acc: 0.9956
+Epoch 19/20 | Train Loss: 0.0930  Acc: 0.9687 | Val Loss: 0.0205  Acc: 0.9929
+Epoch 20/20 | Train Loss: 0.0808  Acc: 0.9750 | Val Loss: 0.0148  Acc: 0.9956
+
+✅ Meilleur checkpoint : /content/resnet50_best.pth  (val_acc=0.9956)
