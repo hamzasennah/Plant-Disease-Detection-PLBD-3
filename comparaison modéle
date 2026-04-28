@@ -1,0 +1,20 @@
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+epochs = range(1, num_epochs+1)
+
+axes[0].plot(epochs, eff_val_losses, label='EfficientNet-B0', marker='o', markersize=3)
+axes[0].plot(epochs, res_val_losses, label='ResNet-50',       marker='s', markersize=3)
+axes[0].set_title('Validation Loss'); axes[0].legend(); axes[0].grid(alpha=0.4)
+
+axes[1].plot(epochs, eff_val_accs, label='EfficientNet-B0', marker='o', markersize=3)
+axes[1].plot(epochs, res_val_accs, label='ResNet-50',       marker='s', markersize=3)
+axes[1].set_title('Validation Accuracy'); axes[1].legend(); axes[1].grid(alpha=0.4)
+
+for ax in axes: ax.set_xlabel('Epoch')
+plt.suptitle('EfficientNet-B0  vs  ResNet-50', fontsize=14, fontweight='bold')
+plt.tight_layout(); plt.show()
+
+print('\n📊 Résumé final')
+print(f'   EfficientNet-B0 → Val: {max(eff_val_accs):.4f} | Test: {eff_test_acc:.4f} ({eff_test_acc*100:.2f}%)')
+print(f'   ResNet-50       → Val: {max(res_val_accs):.4f} | Test: {res_test_acc:.4f} ({res_test_acc*100:.2f}%)')
+winner = 'EfficientNet-B0' if eff_test_acc >= res_test_acc else 'ResNet-50'
+print(f'\n🏆 Meilleur modèle (Test Accuracy) : {winner}')
