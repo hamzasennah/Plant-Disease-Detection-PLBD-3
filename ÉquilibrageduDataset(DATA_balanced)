@@ -1,0 +1,149 @@
+# ══════════════════════════════════════════════════════════════
+# Cellule 2 — Téléchargement Kaggle + Équilibrage + Sauvegarde Drive
+# Plus besoin d'uploader manuellement !
+# ══════════════════════════════════════════════════════════════
+
+import os, random, zipfile, shutil
+import numpy as np
+from pathlib import Path
+from PIL import Image, ImageEnhance, ImageFilter
+
+# ── 1. Monter Google Drive (stockage permanent) ───────────────
+from google.colab import drive
+drive.mount('/content/drive')
+
+DRIVE_DIR        = '/content/drive/MyDrive/AgriScan'
+DRIVE_BALANCED   = f'{DRIVE_DIR}/DATA_balanced'
+LOCAL_BALANCED   = '/content/DATA_balanced'
+OUTPUT_BALANCED  = LOCAL_BALANCED
+
+os.makedirs(DRIVE_DIR, exist_ok=True)
+
+# ── 2. Vérifier si DATA_balanced existe déjà sur Drive ────────
+if os.path.exists(DRIVE_BALANCED) and len(os.listdir(DRIVE_BALANCED)) == 15:
+    print('✅ DATA_balanced trouvé sur Google Drive !')
+    print('   Copie vers /content/DATA_balanced ...')
+    if not os.path.exists(LOCAL_BALANCED):
+        shutil.copytree(DRIVE_BALANCED, LOCAL_BALANCED)
+    print('✅ Prêt ! Passer à la cellule suivante.')
+
+else:
+    print('📥 DATA_balanced absent — Téléchargement depuis Kaggle...')
+
+    # ── 3. Config Kaggle API ───────────────────────────────────
+    # Créer un compte sur kaggle.com → Account → Create API Token
+    # Coller username et key ci-dessous :
+    KAGGLE_USERNAME = "VOTRE_USERNAME_KAGGLE"   # ← À remplacer
+    KAGGLE_KEY      = "VOTRE_KEY_KAGGLE"         # ← À remplacer
+
+    os.makedirs('/root/.kaggle', exist_ok=True)
+    import json
+    with open('/root/.kaggle/kaggle.json', 'w') as f:
+        json.dump({"username": KAGGLE_USERNAME, "key": KAGGLE_KEY}, f)
+    os.chmod('/root/.kaggle/kaggle.json', 0o600)
+
+    # ── 4. Télécharger depuis Kaggle ──────────────────────────
+    os.system('pip install kaggle -q')
+    os.system('kaggle datasets download -d emmarex/plantdisease -p /content/ --unzip')
+
+    # Trouver le dossier PlantVillage
+    DATA_DIR = None
+    for p in Path('/content').rglob('PlantVillage'):
+        if p.is_dir():
+            DATA_DIR = p
+            break
+    if DATA_DIR is None:
+        # Chercher directement les dossiers de classes
+        for p in Path('/content').iterdir():
+            if p.is_dir() and any('Tomato' in str(x) for x in p.iterdir()):
+                DATA_DIR = p
+                break
+
+    print(f'📂 Dataset trouvé : {DATA_DIR}')
+    print(f'   Classes : {[d.name for d in sorted(DATA_DIR.iterdir()) if d.is_dir()][:5]}...')
+
+    # ── 5. Fonctions d'augmentation ───────────────────────────
+    def aug_flip_h(img):   return img.transpose(Image.FLIP_LEFT_RIGHT)
+    def aug_flip_v(img):   return img.transpose(Image.FLIP_TOP_BOTTOM)
+    def aug_rotate(img):   return img.rotate(random.uniform(-30,30), resample=Image.BICUBIC)
+    def aug_zoom(img):
+        f=random.uniform(0.75,0.95); w,h=img.size
+        l,t=int(w*(1-f)/2),int(h*(1-f)/2)
+        return img.crop((l,t,w-l,h-t)).resize((w,h),Image.BICUBIC)
+    def aug_brightness(img): return ImageEnhance.Brightness(img).enhance(random.uniform(0.6,1.4))
+    def aug_contrast(img):   return ImageEnhance.Contrast(img).enhance(random.uniform(0.7,1.3))
+    def aug_saturation(img): return ImageEnhance.Color(img).enhance(random.uniform(0.7,1.4))
+    def aug_noise(img):
+        a=np.array(img).astype(np.int16)
+        return Image.fromarray(np.clip(a+np.random.normal(0,15,a.shape).astype(np.int16),0,255).astype(np.uint8))
+    def aug_blur(img): return img.filter(ImageFilter.GaussianBlur(random.uniform(0.5,1.5)))
+
+    AUGS = [aug_flip_h, aug_flip_v, aug_rotate, aug_zoom,
+            aug_brightness, aug_contrast, aug_saturation, aug_noise, aug_blur]
+
+    def random_augment(img):
+        for op in random.sample(AUGS, k=random.randint(2,4)):
+            img = op(img)
+        return img
+
+    # ── 6. Équilibrage ────────────────────────────────────────
+    TARGET   = 1000
+    IMG_SIZE = (224, 224)
+
+    print(f'\n📊 Équilibrage → {OUTPUT_BALANCED}')
+    print(f'{"Classe":<52} {"Avant":>6} {"Après":>6}  Action')
+    print('─'*80)
+
+    Path(OUTPUT_BALANCED).mkdir(parents=True, exist_ok=True)
+
+    for cdir in sorted(DATA_DIR.iterdir()):
+        if not cdir.is_dir(): continue
+        imgs = [f for f in cdir.iterdir() if f.suffix.lower() in ('.jpg','.jpeg','.png')]
+        n = len(imgs)
+        if n == 0: continue
+
+        out = Path(OUTPUT_BALANCED) / cdir.name
+        out.mkdir(parents=True, exist_ok=True)
+
+        if n >= TARGET:
+            sel = random.sample(imgs, TARGET)
+            for i, s in enumerate(sel):
+                Image.open(s).convert('RGB').resize(IMG_SIZE, Image.BICUBIC).save(
+                    out/f'img_{i:05d}.jpg', 'JPEG', quality=90)
+            action = '⬇ under-sampled'
+        else:
+            for i, s in enumerate(imgs):
+                Image.open(s).convert('RGB').resize(IMG_SIZE, Image.BICUBIC).save(
+                    out/f'img_{i:05d}.jpg', 'JPEG', quality=90)
+            pool = (imgs*(TARGET//n+2))
+            random.shuffle(pool)
+            for idx, s in enumerate(pool[:TARGET-n]):
+                img = Image.open(s).convert('RGB').resize(IMG_SIZE, Image.BICUBIC)
+                random_augment(img).save(
+                    out/f'img_{n+idx:05d}_aug.jpg', 'JPEG', quality=90)
+            action = f'⬆ over-sampled (orig={n})'
+
+        print(f'{cdir.name:<52} {n:>6} {TARGET:>6}  {action}')
+
+    print('─'*80)
+    print(f'✅ DATA_balanced prêt localement : {OUTPUT_BALANCED}')
+
+    # ── 7. Sauvegarder sur Google Drive (permanent) ───────────
+    print(f'\n💾 Sauvegarde sur Google Drive : {DRIVE_BALANCED} ...')
+    if os.path.exists(DRIVE_BALANCED):
+        shutil.rmtree(DRIVE_BALANCED)
+    shutil.copytree(OUTPUT_BALANCED, DRIVE_BALANCED)
+    print(f'✅ Sauvegardé ! La prochaine session chargera depuis Drive.')
+
+# ── 8. Vérification finale ────────────────────────────────────
+print('\n🔍 Vérification :')
+total = 0
+for cls in sorted(os.listdir(OUTPUT_BALANCED)):
+    cls_path = os.path.join(OUTPUT_BALANCED, cls)
+    if os.path.isdir(cls_path):
+        n = len(os.listdir(cls_path))
+        total += n
+        status = '✅' if n == 1000 else '⚠️'
+        print(f'  {status} {cls:<50} {n} images')
+print(f'\n  Total : {total} images | {total//1000} classes à 1000 images')
+print(f'\n✅ data_dir = "{OUTPUT_BALANCED}"')
