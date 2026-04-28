@@ -1,0 +1,36 @@
+efficientnet = models.efficientnet_b0(weights='DEFAULT')
+efficientnet.classifier[1] = nn.Linear(efficientnet.classifier[1].in_features, num_classes)
+efficientnet = efficientnet.to(device)
+optimizer_eff = optim.Adam(efficientnet.parameters(), lr=1e-4)
+print(f'✅ EfficientNet-B0 prêt ({num_classes} classes) — DATA_balanced')
+
+(
+    eff_train_losses, eff_val_losses,
+    eff_train_accs,   eff_val_accs,
+    eff_ckpt
+) = train_model(efficientnet, optimizer_eff, model_name='efficientnet', num_epochs=num_epochs)
+Downloading: "https://download.pytorch.org/models/efficientnet_b0_rwightman-7f5810bc.pth" to /root/.cache/torch/hub/checkpoints/efficientnet_b0_rwightman-7f5810bc.pth
+100%|██████████| 20.5M/20.5M [00:00<00:00, 44.9MB/s]
+✅ EfficientNet-B0 prêt (15 classes) — DATA_balanced
+Epoch  1/20 | Train Loss: 1.1329  Acc: 0.6978 | Val Loss: 0.1980  Acc: 0.9484  💾 Checkpoint (val_acc=0.9484)
+Epoch  2/20 | Train Loss: 0.3457  Acc: 0.8970 | Val Loss: 0.0857  Acc: 0.9760  💾 Checkpoint (val_acc=0.9760)
+Epoch  3/20 | Train Loss: 0.2478  Acc: 0.9203 | Val Loss: 0.0542  Acc: 0.9831  💾 Checkpoint (val_acc=0.9831)
+Epoch  4/20 | Train Loss: 0.1989  Acc: 0.9385 | Val Loss: 0.0477  Acc: 0.9880  💾 Checkpoint (val_acc=0.9880)
+Epoch  5/20 | Train Loss: 0.1856  Acc: 0.9411 | Val Loss: 0.0470  Acc: 0.9849
+Epoch  6/20 | Train Loss: 0.1578  Acc: 0.9501 | Val Loss: 0.0316  Acc: 0.9884  💾 Checkpoint (val_acc=0.9884)
+Epoch  7/20 | Train Loss: 0.1444  Acc: 0.9541 | Val Loss: 0.0324  Acc: 0.9889  💾 Checkpoint (val_acc=0.9889)
+Epoch  8/20 | Train Loss: 0.1403  Acc: 0.9550 | Val Loss: 0.0368  Acc: 0.9893  💾 Checkpoint (val_acc=0.9893)
+Epoch  9/20 | Train Loss: 0.1273  Acc: 0.9607 | Val Loss: 0.0319  Acc: 0.9880
+Epoch 10/20 | Train Loss: 0.1246  Acc: 0.9622 | Val Loss: 0.0280  Acc: 0.9916  💾 Checkpoint (val_acc=0.9916)
+Epoch 11/20 | Train Loss: 0.1080  Acc: 0.9658 | Val Loss: 0.0264  Acc: 0.9911
+Epoch 12/20 | Train Loss: 0.1099  Acc: 0.9663 | Val Loss: 0.0214  Acc: 0.9916
+Epoch 13/20 | Train Loss: 0.1045  Acc: 0.9661 | Val Loss: 0.0236  Acc: 0.9924  💾 Checkpoint (val_acc=0.9924)
+Epoch 14/20 | Train Loss: 0.0967  Acc: 0.9694 | Val Loss: 0.0199  Acc: 0.9933  💾 Checkpoint (val_acc=0.9933)
+Epoch 15/20 | Train Loss: 0.0955  Acc: 0.9695 | Val Loss: 0.0202  Acc: 0.9951  💾 Checkpoint (val_acc=0.9951)
+Epoch 16/20 | Train Loss: 0.0896  Acc: 0.9729 | Val Loss: 0.0190  Acc: 0.9956  💾 Checkpoint (val_acc=0.9956)
+Epoch 17/20 | Train Loss: 0.0947  Acc: 0.9693 | Val Loss: 0.0221  Acc: 0.9951
+Epoch 18/20 | Train Loss: 0.0849  Acc: 0.9729 | Val Loss: 0.0303  Acc: 0.9911
+Epoch 19/20 | Train Loss: 0.0852  Acc: 0.9719 | Val Loss: 0.0199  Acc: 0.9942
+Epoch 20/20 | Train Loss: 0.0806  Acc: 0.9725 | Val Loss: 0.0174  Acc: 0.9942
+
+✅ Meilleur checkpoint : /content/efficientnet_best.pth  (val_acc=0.9956)
